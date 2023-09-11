@@ -34,7 +34,7 @@ namespace CSharpServer.Servers
                 _serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _serverSocket.Bind(_ipEndPoint);
                 _serverSocket.Listen(0);
-                _serverSocket.BeginAccept(AcceptCallBack, null);
+                _serverSocket.BeginAccept(AcceptCallBack, _serverSocket);
 
                 LogManager.LogInfo("服务器启动成功，等待客户端连接...");
             }
@@ -61,13 +61,17 @@ namespace CSharpServer.Servers
 
         private void AcceptCallBack(IAsyncResult result)
         {
-            if (_serverSocket != null)
+            Socket? serverSocket = result.AsyncState as Socket;
+            if (serverSocket != null)
             {
-                Socket clientSocket = _serverSocket.EndAccept(result);
+                Socket clientSocket = serverSocket.EndAccept(result);
                 Client client = new Client(clientSocket, this);
+                client.Start();
                 _clientList.Add(client);
 
                 LogManager.LogInfo("客户端连接成功，等待客户端消息...");
+
+                serverSocket.BeginAccept(AcceptCallBack, serverSocket);
             }
         }
     }

@@ -1,4 +1,6 @@
 ﻿using Common;
+using CSharpServer.Servers;
+using CSharpServer.ServerTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,13 @@ namespace CSharpServer.Contoller
         public ContollerDefault()
         {
             this._request = RequestCode.None;
+        }
+
+        public string None(string data, Client client, Server server)
+        {
+            var info = string.Format("服务器接收到：{0}", data);
+            LogManager.LogInfo(info);
+            return info;
         }
     }
 }

@@ -34,7 +34,7 @@ namespace CSharpServer.Servers
         #region Private
         private void ReceiveConnect()
         {
-            this._clientSocket.BeginReceive(this._message.Data, this._message.TotalCount, this._message.RemainSize, SocketFlags.None, ReceiveCallback, null);
+            this._clientSocket.BeginReceive(this._message.Data, this._message.TotalCount, this._message.RemainSize, SocketFlags.None, ReceiveCallback, this._clientSocket);
         }
         #endregion
         public void Start()
@@ -64,19 +64,23 @@ namespace CSharpServer.Servers
         {
             try
             {
-                int count = this._clientSocket.EndReceive(result);
-                if (count == 0)
+                var clientSocket = result.AsyncState as Socket;
+                if (clientSocket != null)
                 {
-                    Close();
-                    LogManager.LogInfo("客户端主动断开连接。");
-                    return;
+                    int count = clientSocket.EndReceive(result);
+                    if (count == 0)
+                    {
+                        Close();
+                        LogManager.LogInfo("客户端主动断开连接。");
+                        return;
+                    }
+
+                    //处理接收到的数据
+                    this._message.ReadMessage(count, OnProcessMessage);
+
+                    //处理完数据等待下一次数据发送
+                    ReceiveConnect();
                 }
-
-                //处理接收到的数据
-                this._message.ReadMessage(count, OnProcessMessage);
-
-                //处理完数据等待下一次数据发送
-                ReceiveConnect();
             }
             catch (Exception e)
             {
@@ -88,7 +92,6 @@ namespace CSharpServer.Servers
         private void OnProcessMessage(RequestCode request, ActionCode action, string data)
         {
             _server.HandleRequest(request, action, data, this);
-            LogManager.LogInfo(string.Format("接收到客户端请求数据，Request: {0}, Action: {1}, Datas: {2} 。", request, action, data));
         }
         #endregion
     }
